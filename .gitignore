@@ -1,0 +1,12 @@
+.DS_Store
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks

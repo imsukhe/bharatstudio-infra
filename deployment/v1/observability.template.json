@@ -1,0 +1,40 @@
+{
+  "version": "v1",
+  "environment": "staging-template",
+  "enabled": false,
+  "purpose": "Declarative monitoring boundary only; no live dashboards or alert policies are provisioned by this file.",
+  "labelPolicy": {
+    "allowed": ["service", "route_template", "method", "status_class", "outcome", "environment"],
+    "forbidden": ["user_id", "channel_id", "queue_id", "event_id", "order_id", "payment_id", "provider_event_id", "donor_email", "token", "raw_url", "raw_error"]
+  },
+  "scrapeTargets": [
+    { "service": "alerts-api", "path": "/internal/metrics", "identity": "REQUIRED_ALERTS_METRICS_IDENTITY", "enabled": false },
+    { "service": "payment-webhook", "path": "/internal/metrics", "identity": "REQUIRED_PAYMENT_METRICS_IDENTITY", "enabled": false },
+    { "service": "alert-worker", "path": "/internal/metrics", "identity": "REQUIRED_WORKER_METRICS_IDENTITY", "enabled": false }
+  ],
+  "dashboards": [
+    { "id": "payment-receipt", "owner": "payments", "panels": ["webhook_outcomes", "checkout_outcomes", "reconciliation_outcomes", "receipt_latency", "provider_failures", "duplicate_event_rate"] },
+    { "id": "alert-dispatch", "owner": "alerts", "panels": ["ready_backlog", "task_outcomes", "task_latency", "dead_letter_count", "delivery_retry_rate", "queue_age"] },
+    { "id": "overlay-fanout", "owner": "alerts-sre", "panels": ["sse_connections", "sse_reconnects", "listener_failures", "replay_lag", "ack_retry_rate", "cross_replica_fanout_lag"] },
+    { "id": "platform-health", "owner": "sre", "panels": ["readiness", "liveness", "http_error_rate", "database_pool", "database_cpu", "cloud_run_instances", "cloud_tasks_depth"] },
+    { "id": "companion-and-security", "owner": "security-support", "panels": ["helper_freshness", "crash_rate", "pairing_failures", "auth_anomalies", "rate_limit_rejections", "support_bundle_events"] }
+  ],
+  "alertPolicies": [
+    { "id": "payment-receipt-failure", "owner": "payments", "severity": "page", "condition": "REQUIRED_PAYMENT_RECEIPT_ERROR_BUDGET", "action": "preserve durable intent, inspect provider/DB, follow payment recovery runbook" },
+    { "id": "webhook-verification-anomaly", "owner": "security", "severity": "page", "condition": "REQUIRED_WEBHOOK_VERIFICATION_THRESHOLD", "action": "inspect provider configuration and signature failures without logging payloads" },
+    { "id": "alert-backlog-age", "owner": "alerts-sre", "severity": "page", "condition": "REQUIRED_ALERT_BACKLOG_AGE_THRESHOLD", "action": "inspect durable outbox/Cloud Tasks; never drop or acknowledge accepted delivery" },
+    { "id": "alert-dead-letter", "owner": "alerts-sre", "severity": "page", "condition": "REQUIRED_ALERT_DLQ_THRESHOLD", "action": "pause/replay through the worker runbook after cause and identity review" },
+    { "id": "overlay-reconnect-fanout", "owner": "alerts-sre", "severity": "ticket", "condition": "REQUIRED_OVERLAY_RECONNECT_THRESHOLD", "action": "verify direct listener and durable replay; notification is not correctness" },
+    { "id": "database-saturation", "owner": "sre", "severity": "page", "condition": "REQUIRED_DATABASE_SATURATION_THRESHOLD", "action": "apply approved traffic cap/degradation order and protect receipt lane" },
+    { "id": "service-readiness", "owner": "sre", "severity": "page", "condition": "REQUIRED_READINESS_FAILURE_THRESHOLD", "action": "stop rollout or roll back; preserve pending durable work" },
+    { "id": "companion-helper-health", "owner": "support", "severity": "ticket", "condition": "REQUIRED_HELPER_HEALTH_THRESHOLD", "action": "show degraded helper state; never change payment or alert delivery" }
+  ],
+  "beforeEnablement": [
+    "approved service identities and private scrape access",
+    "environment-specific thresholds measured in staging",
+    "dashboard queries verified against deployed metric names",
+    "alert routing, owner and runbook rehearsal",
+    "retention and access review for operational telemetry",
+    "negative test proving forbidden labels and raw payloads are absent"
+  ]
+}

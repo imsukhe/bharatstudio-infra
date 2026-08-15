@@ -1,0 +1,157 @@
+{
+  "version": "v1",
+  "environment": "staging-template",
+  "deploymentState": "not-deployable",
+  "approvedAuthority": "bharatstudio-requirements/active/launch/00_LAUNCH_SCOPE_AUTHORITY.md",
+  "providers": {
+    "compute": "gcp-cloud-run",
+    "database": "neon-postgresql",
+    "staticHosting": "cloudflare-pages",
+    "scheduler": "gcp-cloud-scheduler",
+    "taskTransport": "gcp-cloud-tasks"
+  },
+  "database": {
+    "appConnectionSecretRef": "REQUIRED_DATABASE_URL_APP_SECRET_REF",
+    "directListenerConnectionSecretRef": "REQUIRED_DATABASE_URL_DIRECT_SECRET_REF",
+    "directListenerRequiredFor": ["overlay-sse-wakeup"],
+    "pooledListenNotifyForbidden": true,
+    "region": "REQUIRED_NEON_REGION",
+    "computeSize": "REQUIRED_NEON_COMPUTE_SIZE"
+  },
+  "services": [
+    {
+      "id": "alerts-api",
+      "runtime": "typescript",
+      "source": "bharatstudio-alerts/apps/api",
+      "publicIngress": true,
+      "publicRoutes": ["/v1/public/*", "/v1/overlays/*"],
+      "internalRoutesRequireOidc": ["/internal/*"],
+      "requiredEnv": [
+        "APP_ORIGIN",
+        "DATABASE_URL_APP",
+        "DATABASE_URL_DIRECT",
+        "GOOGLE_CLIENT_ID",
+        "PAYMENT_ENVIRONMENT",
+        "PAYMENT_SERVICE_ORIGIN",
+        "PAYMENT_SERVICE_AUDIENCE",
+        "INTERNAL_SERVICE_AUDIENCES"
+      ],
+      "minInstances": "REQUIRED_ALERTS_API_MIN_INSTANCES",
+      "maxInstances": "REQUIRED_ALERTS_API_MAX_INSTANCES",
+      "concurrency": "REQUIRED_ALERTS_API_CONCURRENCY",
+      "serviceAccount": "REQUIRED_ALERTS_API_SERVICE_ACCOUNT",
+      "secretRefs": [
+        "REQUIRED_DATABASE_URL_APP_SECRET_REF",
+        "REQUIRED_DATABASE_URL_DIRECT_SECRET_REF"
+      ],
+      "health": { "liveness": "/healthz", "readiness": "/readyz" }
+    },
+    {
+      "id": "payment-webhook",
+      "runtime": "go",
+      "source": "bharatstudio-alerts/services/payment-webhook-go",
+      "publicIngress": true,
+      "publicRoutes": ["/v1/webhooks/razorpay"],
+      "publicRouteAuthentication": "razorpay-hmac-and-x-razorpay-event-id",
+      "internalRoutesRequireOidc": ["/internal/*"],
+      "requiredEnv": [
+        "PAYMENT_ENVIRONMENT",
+        "PAYMENT_PRIVATE_AUDIENCE",
+        "RAZORPAY_WEBHOOK_SECRET",
+        "RAZORPAY_KEY_ID",
+        "RAZORPAY_KEY_SECRET",
+        "PAYMENT_DATABASE_URL",
+        "ALERT_WORKER_PUMP_URL",
+        "ALERT_WORKER_PUMP_AUDIENCE"
+      ],
+      "minInstances": "REQUIRED_PAYMENT_MIN_INSTANCES",
+      "maxInstances": "REQUIRED_PAYMENT_MAX_INSTANCES",
+      "concurrency": "REQUIRED_PAYMENT_CONCURRENCY",
+      "serviceAccount": "REQUIRED_PAYMENT_SERVICE_ACCOUNT",
+      "secretRefs": [
+        "REQUIRED_RAZORPAY_WEBHOOK_SECRET_REF",
+        "REQUIRED_RAZORPAY_KEY_SECRET_REF",
+        "REQUIRED_PAYMENT_DATABASE_URL_SECRET_REF"
+      ],
+      "health": { "liveness": "/healthz", "readiness": "/readyz" }
+    },
+    {
+      "id": "alert-worker",
+      "runtime": "go",
+      "source": "bharatstudio-alerts/services/alert-worker-go",
+      "publicIngress": false,
+      "publicRoutes": [],
+      "internalRoutesRequireOidc": ["/internal/v1/tasks/*"],
+      "requiredEnv": [
+        "ALERT_WORKER_DATABASE_URL",
+        "ALERT_WORKER_PRIVATE_AUDIENCE",
+        "ALERT_WORKER_CLOUD_TASKS_QUEUE",
+        "ALERT_WORKER_TASK_TARGET_URL",
+        "ALERT_WORKER_TASK_SERVICE_ACCOUNT"
+      ],
+      "minInstances": "REQUIRED_ALERT_WORKER_MIN_INSTANCES",
+      "maxInstances": "REQUIRED_ALERT_WORKER_MAX_INSTANCES",
+      "concurrency": "REQUIRED_ALERT_WORKER_CONCURRENCY",
+      "tunableEnv": {
+        "ALERT_WORKER_PUMP_CONCURRENCY": "REQUIRED_ALERT_WORKER_PUMP_CONCURRENCY"
+      },
+      "serviceAccount": "REQUIRED_ALERT_WORKER_SERVICE_ACCOUNT",
+      "secretRefs": ["REQUIRED_ALERT_WORKER_DATABASE_URL_SECRET_REF"],
+      "health": { "liveness": "/healthz", "readiness": "/readyz" }
+    }
+  ],
+  "taskTransport": {
+    "queue": "REQUIRED_CLOUD_TASKS_QUEUE",
+    "region": "REQUIRED_CLOUD_TASKS_REGION",
+    "workerTargetService": "alert-worker",
+    "workerTargetAudience": "REQUIRED_ALERT_WORKER_PRIVATE_AUDIENCE",
+    "workerInvokerServiceAccount": "REQUIRED_PAYMENT_OR_PUMP_SERVICE_ACCOUNT",
+    "deadLetterQueue": "REQUIRED_CLOUD_TASKS_DEAD_LETTER_QUEUE",
+    "retryPolicy": "REQUIRED_APPROVED_RETRY_POLICY",
+    "enabled": false
+  },
+  "oidcContracts": [
+    {
+      "callerService": "payment-webhook",
+      "targetService": "alert-worker",
+      "callerAudienceEnv": "ALERT_WORKER_PUMP_AUDIENCE",
+      "targetVerifierEnv": "ALERT_WORKER_PRIVATE_AUDIENCE",
+      "mustMatch": true
+    }
+  ],
+  "scheduler": {
+    "definitionSource": "bharatstudio-crons/schedules/v1.json",
+    "enabled": false,
+    "privateOidcOnly": true,
+    "directDatabaseCredentialsForbidden": true
+  },
+  "observability": {
+    "contract": "deployment/v1/observability.template.json",
+    "enabled": false,
+    "privateScrapeOnly": true,
+    "rawPayloadsAndUserIdentifiersForbidden": true
+  },
+  "staticSurfaces": {
+    "marketing": "bharatstudio-marketing",
+    "alertsWeb": "bharatstudio-alerts/apps/web",
+    "alertsWebRequiredBuildEnv": [
+      "API_ORIGIN",
+      "NEXT_PUBLIC_API_ORIGIN",
+      "NEXT_PUBLIC_GOOGLE_CLIENT_ID",
+      "NEXT_PUBLIC_RAZORPAY_KEY_ID"
+    ],
+    "providerSecretsForbidden": true
+  },
+  "requiredBeforeDeploy": [
+    "approved-master-release-authority",
+    "neon-region-and-compute-size",
+    "cloud-run-min-max-concurrency-per-service",
+    "secret-manager-references-provisioned",
+    "service-account-and-oidc-negative-tests",
+    "cloud-tasks-retry-and-dead-letter-staging-proof",
+    "razorpay-provider-approval-and-sandbox-proof",
+    "sse-cross-replica-and-direct-listener-staging-proof",
+    "backup-restore-and-rollback-rehearsal",
+    "observability-dashboard-and-actionable-alerts"
+  ]
+}
