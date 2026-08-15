@@ -34,7 +34,8 @@
         "PAYMENT_ENVIRONMENT",
         "PAYMENT_SERVICE_ORIGIN",
         "PAYMENT_SERVICE_AUDIENCE",
-        "INTERNAL_SERVICE_AUDIENCES"
+        "INTERNAL_SERVICE_AUDIENCES",
+        "NOTIFICATION_TOKEN_ENCRYPTION_KEY"
       ],
       "minInstances": "REQUIRED_ALERTS_API_MIN_INSTANCES",
       "maxInstances": "REQUIRED_ALERTS_API_MAX_INSTANCES",
@@ -42,7 +43,8 @@
       "serviceAccount": "REQUIRED_ALERTS_API_SERVICE_ACCOUNT",
       "secretRefs": [
         "REQUIRED_DATABASE_URL_APP_SECRET_REF",
-        "REQUIRED_DATABASE_URL_DIRECT_SECRET_REF"
+        "REQUIRED_DATABASE_URL_DIRECT_SECRET_REF",
+        "REQUIRED_NOTIFICATION_TOKEN_ENCRYPTION_KEY_SECRET_REF"
       ],
       "health": { "liveness": "/healthz", "readiness": "/readyz" }
     },

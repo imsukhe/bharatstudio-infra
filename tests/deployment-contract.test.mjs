@@ -74,6 +74,12 @@ test('Alerts API public route prefixes match the registered L03 surfaces', () =>
   assert.equal(api.publicRoutes.some(route => route.startsWith('/api/')), false);
 });
 
+test('Alerts API notification token protection is an explicit production secret', () => {
+  const api = manifest.services.find(service => service.id === 'alerts-api');
+  assert.ok(api.requiredEnv.includes('NOTIFICATION_TOKEN_ENCRYPTION_KEY'));
+  assert.ok(api.secretRefs.includes('REQUIRED_NOTIFICATION_TOKEN_ENCRYPTION_KEY_SECRET_REF'));
+});
+
 test('Alerts web build has explicit API/auth/payment configuration requirements', () => {
   assert.deepEqual(manifest.staticSurfaces.alertsWebRequiredBuildEnv, [
     'API_ORIGIN',
