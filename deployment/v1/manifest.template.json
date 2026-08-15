@@ -142,6 +142,14 @@
       "NEXT_PUBLIC_GOOGLE_CLIENT_ID",
       "NEXT_PUBLIC_RAZORPAY_KEY_ID"
     ],
+    "alertsWebRequiredHeadersFile": "public/_headers",
+    "alertsWebRequiredSecurityHeaders": [
+      "content-security-policy",
+      "referrer-policy",
+      "permissions-policy",
+      "x-content-type-options",
+      "x-frame-options"
+    ],
     "providerSecretsForbidden": true
   },
   "requiredBeforeDeploy": [

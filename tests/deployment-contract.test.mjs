@@ -88,6 +88,14 @@ test('Alerts web build has explicit API/auth/payment configuration requirements'
     'NEXT_PUBLIC_RAZORPAY_KEY_ID',
   ]);
   assert.equal(manifest.staticSurfaces.alertsWebRequiredBuildEnv.includes('RAZORPAY_KEY_SECRET'), false);
+  assert.equal(manifest.staticSurfaces.alertsWebRequiredHeadersFile, 'public/_headers');
+  assert.deepEqual(manifest.staticSurfaces.alertsWebRequiredSecurityHeaders, [
+    'content-security-policy',
+    'referrer-policy',
+    'permissions-policy',
+    'x-content-type-options',
+    'x-frame-options',
+  ]);
 });
 
 test('database and scheduler boundaries prevent pooled listeners and scheduler DB access', () => {

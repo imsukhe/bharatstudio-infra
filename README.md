@@ -33,6 +33,11 @@ The contract establishes these non-negotiable boundaries:
   `NEXT_PUBLIC_RAZORPAY_KEY_ID`. The web build must never receive the Razorpay
   secret; production browser code rejects missing, local or non-HTTPS API
   origins.
+- The Alerts static build must publish `apps/web/public/_headers` with the
+  checked-in CSP, framing, referrer, permissions and content-type protections.
+  The provider allow-list is deliberately limited to Google sign-in,
+  Razorpay Checkout and the BharatStudio API domain; changing it is a reviewed
+  deployment-contract change.
 - Scheduler definitions remain in `bharatstudio-crons` and never receive a
   database credential.
 - Cloud Tasks and Cloud Scheduler remain disabled until the launch authority,
