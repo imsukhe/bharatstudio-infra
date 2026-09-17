@@ -1,0 +1,22 @@
+{
+  "schema": "bharatstudio.measurement.v1",
+  "environment": "local-disposable",
+  "deploymentState": "not-deployable",
+  "region": "REQUIRED_NONPROD_REGION",
+  "project": "REQUIRED_NONPROD_PROJECT",
+  "domain": "REQUIRED_NONPROD_DOMAIN",
+  "capacity": {"maxInstances": "REQUIRED_MAX_INSTANCES", "concurrency": "REQUIRED_CONCURRENCY", "budget": "REQUIRED_BUDGET_CAP"},
+  "services": [
+    {"id":"alerts-api","source":"bharatstudio-alerts/apps/api","privateWorker":false,"ingress":"public-allowlist","oidc":"internal-routes-only","digest":"sha256:REQUIRED_ALERTS_API_DIGEST"},
+    {"id":"payment-webhook","source":"bharatstudio-alerts/services/payment-webhook-go","privateWorker":false,"ingress":"provider-signature","oidc":"internal-routes-only","digest":"sha256:REQUIRED_PAYMENT_DIGEST"},
+    {"id":"alert-worker","source":"bharatstudio-alerts/services/alert-worker-go","privateWorker":true,"ingress":"private","oidc":"required","digest":"sha256:REQUIRED_WORKER_DIGEST"}
+  ],
+  "database":{"engine":"postgresql16","url":"REQUIRED_DISPOSABLE_DATABASE_URL","directListener":"REQUIRED_DIRECT_LISTENER_URL","seed":"synthetic-bounded","maxRows":"REQUIRED_SEED_ROW_LIMIT","fullReference":{"channels":500,"payments":2000000,"alertEvents":5000000,"identities":200000},"smokeMaxRows":100000,"indexes":"REQUIRED_PRODUCTION_INDEX_SET"},
+  "profiles":["3G","4G"],
+  "networkProfiles":{"4G":{"downMbps":9,"latencyMs":170},"3G":{"downMbps":1.6,"latencyMs":300}},
+  "harness":{"obs":"REQUIRED_PINNED_OBS_VERSION","chromium":"REQUIRED_PINNED_CHROMIUM_VERSION","android":"REQUIRED_ANDROID_DEVICE","ios":"REQUIRED_IOS_DEVICE"},
+  "prerequisites":{"razorpaySandbox":"missing","cloudRun":"not-run","obsDeviceNetwork":"not-run"},
+  "rollback":{"killSwitch":"disable-local-measurement","cleanup":"named-disposable-only"},
+  "observability":{"enabled":false,"redacted":true,"privateOnly":true},
+  "artifact":{"schema":"bharatstudio.measurement.v1","redacted":true,"externalEvidence":"not-claimed"}
+}
